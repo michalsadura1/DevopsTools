@@ -1,0 +1,46 @@
+#cloud-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: ubuntu-sadura
+    password: $6$3C0OvRUF10/01gzM$4czzMPkfPB8pUw3L1.CpMCxpoiBovDpdnzf8xSIP.XsgQ6xVY5ZMWG.NUmfhY3J4l.ZrOEDC76uVhXs2oHek00
+    username: sadura
+  locale: en_US
+  keyboard:
+    layout: de
+  ssh:
+    install-server: true
+    allow-pw: true
+  user-data:
+    timezone: Europe/Berlin
+  storage:
+    layout:
+      name: lvm
+  packages:
+    - apt-transport-https
+    - ca-certificates
+    - bc
+    - curl
+    - git
+    - jq
+    - less
+    - libnss-myhostname
+    - nfs-common
+    - software-properties-common
+    - sshpass
+    - wget
+    - whois
+    - zip
+  package_update: true
+  package_upgrade: true
+  package_reboot_if_required: true
+ 
+
+
+
+  
+  
+
+
+  
+
