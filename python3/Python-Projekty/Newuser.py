@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-#
 # Create new user
-
-#
-
-
 
 import os, crypt
 
