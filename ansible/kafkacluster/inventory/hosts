@@ -1,0 +1,7 @@
+[servers]
+ubuntu22kafka-node01 ansible_host=192.168.0.100 ansible_user=ansible kafka_node_id=1
+ubuntu22kafka-node02 ansible_host=192.168.0.101 ansible_user=ansible kafka_node_id=2
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
+

@@ -1,0 +1,49 @@
+---
+  - name: Uinstall Kafka Cluster with Craftmode
+    hosts: all
+    vars_files:
+      - ../vars/settings.yaml
+    become: yes
+    become_user: root
+
+    tasks:
+
+      - name: 'Uninstall JVM: {{ jvm_package }}'
+        apt:
+          name: "{{ jvm_package }}"
+          state: absent
+        become: yes
+
+      - name: 'Unistall unzip'
+        apt:
+          name: unzip
+          state: absent
+        become: yes
+
+      - name: Stop kafka service
+        become: true
+        command: systemctl stop kafka
+
+      - name: Remove user '{{ kafka_user }}'
+        user:
+          name: "{{ kafka_user }}"
+          state: absent
+          remove: yes
+
+      - name: disbale kafka service
+        become: true
+        command: systemctl disable kafka
+
+      - name: reload all systemd services
+        become: true
+        command: systemctl daemon-reload
+
+      - name: Delete recursive "{{ kafka_folder }}"
+        become: true
+        command: rm -fr "{{ kafka_folder }}"
+
+
+
+
+
+

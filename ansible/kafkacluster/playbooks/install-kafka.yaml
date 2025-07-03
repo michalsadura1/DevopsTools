@@ -1,0 +1,119 @@
+---
+  - name: Install Kafka Cluster with Craftmode
+    hosts: all
+    vars_files:
+      - ../vars/settings.yaml
+    become: yes
+    become_user: root
+    
+    tasks:
+
+      - name: 'Install JVM: {{ jvm_package }}'
+        apt:
+          name: "{{ jvm_package }}"
+          state: latest
+        become: yes
+
+      - name: 'Install unzip'
+        apt:
+          name: unzip
+          state: latest
+        become: yes
+
+      - name: Create kafka group
+        become: true
+        ansible.builtin.group:
+          name: "{{ kafka_user }}"
+          state: present
+          system: true
+
+
+      - name: Create user '{{ kafka_user }}'
+        user:
+          name: "{{ kafka_user }}"
+          password: NOT_LOGGING_PASSWORD
+          group: "{{ kafka_user }}"
+          createhome: false
+
+      - name: "Create installation folder {{ kafka_folder }}"
+        file:
+         path: "{{ kafka_folder }}"
+         state: directory
+         mode: 0755
+         group: "{{ kafka_user }}"
+         owner: "{{ kafka_user }}"
+
+      - name: Download Kafka 3.7.2 with check (md5)
+        ansible.builtin.get_url:
+          url: https://dlcdn.apache.org/kafka/3.7.2/kafka_2.12-3.7.2.tgz
+          dest: "{{ kafka_folder }}"
+          checksum: md5:430b1d968b80ce62ef9d53d1589a9088
+
+      - name: Extract kafka_2.12-3.7.2.tgz into  "{{ kafka_folder }}"
+        unarchive:
+          src: "{{ kafka_folder }}/kafka_2.12-3.7.2.tgz"
+          dest: "{{ kafka_folder }}"
+          extra_opts: ['--strip-components=1', '--show-stored-names']
+        
+
+      - name: Generate kafka clsutre id
+        command: "{{ kafka_folder }}/bin/kafka-storage.sh random-uuid"
+        register: KAFKA_CLUSTER
+
+      - name: kafka_cluster_id
+        debug:
+          msg: "{{ KAFKA_CLUSTER.stdout }}"
+
+
+      - name: Change user and group for  {{ kafka_folder }}
+        command: chown -R {{ kafka_user }}:{{ kafka_user }} {{ kafka_folder }}
+        become: true
+
+
+      - name: Install Kafka service definition
+        become: true
+        ansible.builtin.template:
+          src: /home/ansible/playbooks/kafka/templates/kafka.service.j2
+          dest: /etc/systemd/system/kafka.service
+          mode: "0644"
+      
+
+      - name: Add controller nodes to group
+        ansible.builtin.add_host:
+          name: "{{ hostvars[item]['inventory_hostname'] }}"
+          group: kafka__group_controller_nodes
+        when: "'controller' in hostvars[item]['kafka_node_roles'] | default(kafka_node_roles)"
+        loop: "{{ ansible_play_hosts }}"
+        changed_when: false
+        loop_control:
+          label: "{{ hostvars[item]['inventory_hostname'] }}"
+
+      - name: Add broker nodes to group
+        ansible.builtin.add_host:
+          name: "{{ hostvars[item]['inventory_hostname'] }}"
+          group: kafka__group_broker_nodes
+        when: "'broker' in hostvars[item]['kafka_node_roles'] | default(kafka_node_roles)"
+        loop: "{{ ansible_play_hosts }}"
+        changed_when: false
+        loop_control:
+          label: "{{ hostvars[item]['inventory_hostname'] }}"
+
+      - name: Configure Kafka
+        become: true
+        ansible.builtin.template:
+          src: /home/ansible/playbooks/kafka/templates/server.properties.j2
+          dest: "{{ kafka_folder }}/config/kraft/server.properties"
+          mode: "0644"
+      
+    
+      - name: Ensure Kafka service is enabled and started
+        become: true
+        ansible.builtin.systemd:
+          name: kafka
+          enabled: true
+          state: started
+          daemon_reload: true
+        retries: 3
+        delay: 2
+
+
