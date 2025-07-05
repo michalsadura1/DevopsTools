@@ -7,7 +7,7 @@ uname=$(uname -a | awk '{print $1}')
 
 
 VAR=$(
-cat <<'EOF'
+cat << EOF
 os: uname
 tests: "wileki kanion"
 foo 2137
